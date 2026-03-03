@@ -1,4 +1,5 @@
-// Question DBUI connects the QuestionDB devtool scene to the QuestionDBManager script
+// Question DBUI connects a Godot control node to the QuestionDBManager script
+// Todo: add edit, remove, create question in the ui (after CRUD works)
 using Godot;
 using System;
 using System.Text;

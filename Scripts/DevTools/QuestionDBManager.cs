@@ -1,4 +1,5 @@
 // QuestionDBManager is a dev tool script for automating question json management and api calls to OpenTDB
+// Todo: separate CRUD operations and api fetch calls
 using Godot;
 using System;
 using System.Collections.Generic;
@@ -36,8 +37,6 @@ public partial class QuestionDBManager : Node
             OnStatusUpdated?.Invoke($"Loaded {Database.Count} questions locally.");
             OnDatabaseUpdated?.Invoke();
         }
-
-        DebugPrintCategories();
     }
 
     // Download, merge, and sync
@@ -49,6 +48,15 @@ public partial class QuestionDBManager : Node
         }
 
         OnStatusUpdated?.Invoke($"Downloading Cat: {category}, Diff: {difficulty}...");
+
+        int available = await GetAvailableCount(category, difficulty);
+        int amountToRequest = Math.Min(50, available);
+
+        if (amountToRequest == 0)
+        {
+            OnStatusUpdated?.Invoke("No questions available for this category/difficulty.");
+            return;
+        }
         
         string url = $"https://opentdb.com/api.php?amount=50&category={category}&difficulty={difficulty}&type=multiple&encode=base64";
         
@@ -99,6 +107,33 @@ public partial class QuestionDBManager : Node
         
         return new List<OpenTDBCategory>(); 
     }
+
+    public async Task<int> GetAvailableCount(int categoryId, string difficulty)
+    {
+        string url = $"https://opentdb.com/api_count.php?category={categoryId}";
+        
+        try
+        {
+            string json = await _client.GetStringAsync(url);
+            var response = JsonSerializer.Deserialize<OpenTDBCountResponse>(json);
+
+            if (response?.CategoryQuestionCount == null)
+                return 0;
+
+            return difficulty switch
+            {
+                "easy" => response.CategoryQuestionCount.Easy,
+                "medium" => response.CategoryQuestionCount.Medium,
+                "hard" => response.CategoryQuestionCount.Hard,
+                _ => 0
+            };
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
     private void SaveDatabase()
     {
         DirAccess.MakeDirAbsolute("res://Data");
@@ -116,18 +151,4 @@ public partial class QuestionDBManager : Node
         ).ToList();
     }
     private string DecodeBase64(string base64) => Encoding.UTF8.GetString(Convert.FromBase64String(base64));
-
-    public void DebugPrintCategories()
-    {
-        var uniqueCategories = Database
-            .Select(q => DecodeBase64(q.Category))
-            .Distinct()
-            .ToList();
-
-        GD.Print("[i] Exact Category Strings in DB:");
-        foreach (var cat in uniqueCategories)
-        {
-            GD.Print($"-> '{cat}'");
-        }
-    }
 }

@@ -1,4 +1,4 @@
-// Question manager is responsible for reading and validating the data from the question database, and owns and mutates the availableQuestions list.
+// Question manager is responsible for reading and decoding the data in the question database; it owns and mutates the availableQuestions list.
 using Godot;
 using System;
 using System.Collections.Generic;
