@@ -1,0 +1,170 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                          THINK FAST, GUESS FASTER                            ║
+║                Architecture Invariants & Engineering Rules                   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+[ ABSTRACT ]
+  This document defines non-negotiable architectural rules. 
+  ● All new systems must comply.
+  ● If a feature requires breaking these rules, the architecture 
+    must be re-evaluated first.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  01. AUTHORITY RULES (MULTIPLAYER)                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+  The Host is the single source of truth.
+
+  [ HOST ONLY ]                        [ CLIENTS ONLY ]
+  ├── Select questions                 ├── Submit input
+  ├── Start or end rounds              ├── Render received state
+  ├── Compute scores                   └── Display data
+  ├── Transition session states
+  └── Finalize placements
+
+  ! INVARIANT: If two machines compute the same authoritative value 
+               independently, the design is wrong.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  02. STATE MACHINE RULES                                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+  The game is driven by a formal state machine.
+  ● Transitions must use a single Transition() method.
+  ● No script may mutate SessionState or RoundState directly.
+  ● Illegal transitions must throw errors.
+  ● Boolean flags must NOT replace explicit state enums.
+
+  [ SESSION FLOW ]
+    LobbyOpen ──▶ LobbyLocked ──▶ GameStarting ──▶ RoundActive ──▶ 
+    RoundTransition ──▶ GameEnding ──▶ GameEnded
+
+  [ ROUND FLOW ]
+    QuestionDisplay ──▶ AnswerCollection ──▶ AnswerLock ──▶ 
+    Scoring ──▶ ResultsDisplay
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  03. INVARIANTS (MUST ALWAYS BE TRUE)                                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+  ■ A player may submit at most one answer per round.
+  ■ Answers cannot change after AnswerLock.
+  ■ Scoring runs exactly once per round.
+  ■ A round cannot start unless the previous one is completed.
+  ■ Timer start must originate from the Host.
+  ■ XP may only be applied during GameEnding.
+  ■ Players cannot join after LobbyLocked.
+  
+  ! FAILURE POLICY: If an invariant is violated, fail immediately.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  04. NETWORKING RULES                                                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+  ● Networking code must be isolated from gameplay logic.
+  ● Gameplay systems must not call RPC directly.
+  ● All network events must be idempotent.
+  ● Duplicate or late messages must not break logic.
+  ● Host transitions state ──▶ clients replicate state.
+  ● Clients never initiate state transitions.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  05. TIMER & SYNCHRONIZATION RULES                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+  ● Local system time is NOT authoritative.
+  ● Host defines start timestamp; Clients compute offset.
+  ● Scoring uses host-relative time.
+  ● Timer logic must be deterministic.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  06. DATA OWNERSHIP RULES                                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+  Every system must define:
+  ├── [OWN]    What data it owns
+  ├── [READ]   What data it reads
+  └── [MUTATE] What data it may mutate
+
+  ! RULE: No two systems may mutate the same data structure.
+  ! RULE: Shared mutable state must be minimized.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  07. PERSISTENCE RULES (JSON)                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+  ● JSON writing must be atomic.
+  ● Never block gameplay thread for file IO.
+  ● Gameplay must not directly access file APIs.
+  ● Corrupted JSON must not silently reset progress.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  08. UI RULES                                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+  ● UI must not contain business logic.
+  ● UI must not compute scores.
+  ● UI must not modify session state.
+  ● UI reacts to state changes ONLY.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  09. SEPARATION OF CONCERNS                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+  [ LAYERS ]
+  ┌──────────────────────────────────────────┐
+  │  PRESENTATION (UI)                       │ ▲  NO UPWARD
+  ├──────────────────────────────────────────┤ │  DEPENDENCIES
+  │  APPLICATION (Game Rules & State)        │ │
+  ├──────────────────────────────────────────┤ │
+  │  NETWORKING                              │ │
+  ├──────────────────────────────────────────┤ │
+  │  PERSISTENCE                             │ │
+  └──────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  10. EVENT DISCIPLINE                                                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+  Systems communicate via events, not direct calls.
+  
+  Example: [ RoundEnded ] Event
+           ├──▶ XP System
+           ├──▶ Achievement System
+           ├──▶ UI Update
+           └──▶ Persistence Save
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  11. ERROR HANDLING RULES                                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+  ● Silent failures are forbidden.
+  ● Invalid state transitions must throw.
+  ● RPC mismatch must log.
+  ● Unexpected null state must be investigated.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  12. CHANGE DISCIPLINE                                                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+  Before adding a feature, verify:
+  1. Who owns this data?
+  2. Who mutates it?
+  3. What state does it belong to?
+  4. What happens if network delays?
+  5. Does this break an invariant?
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  13. ARCHITECTURAL RED FLAGS                                                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+  [!] Multiple systems calculating score
+  [!] Multiple timers
+  [!] Boolean state flags
+  [!] Direct JSON calls inside gameplay
+  [!] UI triggering state transitions
+  [!] Circular dependencies
+
+  STOP AND REFACTOR IF ANY ARE PRESENT.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  14. DEFINITION OF DONE (ARCHITECTURALLY)                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+  A feature is complete ONLY if:
+  ☑ It respects authority boundaries
+  ☑ It obeys the state machine
+  ☑ It preserves invariants
+  ☑ It handles duplicate network messages safely
+  ☑ It does not introduce new hidden dependencies
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[ END OF DOCUMENT ]

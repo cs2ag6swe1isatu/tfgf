@@ -1,0 +1,91 @@
+[gd_scene format=3 uid="uid://dxupr0uug4bir"]
+
+[ext_resource type="Script" uid="uid://cja3mu7fqdspi" path="res://Scripts/DevTools/QuestionDBManager.cs" id="1_7x4w6"]
+[ext_resource type="Script" uid="uid://8ybnbob2fgv4" path="res://Scripts/DevTools/QuestionDBUI.cs" id="1_ascks"]
+
+[node name="DevTools" type="Node" unique_id=990386608]
+
+[node name="UI" type="Control" parent="." unique_id=931240958]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TabContainer" type="TabContainer" parent="UI" unique_id=140992946]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+current_tab = 0
+
+[node name="QuestionDB" type="Node" parent="UI/TabContainer" unique_id=1623683929]
+script = ExtResource("1_7x4w6")
+
+[node name="QuestionDBUI" type="Control" parent="UI/TabContainer" unique_id=1044904580 node_paths=PackedStringArray("_db")]
+layout_mode = 2
+script = ExtResource("1_ascks")
+_db = NodePath("../QuestionDB")
+metadata/_tab_index = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="UI/TabContainer/QuestionDBUI" unique_id=2000730208]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = 33.0
+offset_right = -32.0
+offset_bottom = -40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/TabContainer/QuestionDBUI/MarginContainer" unique_id=2107153892]
+layout_direction = 2
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer" unique_id=604818573]
+custom_minimum_size = Vector2(0, 350)
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer/ScrollContainer" unique_id=464805415]
+clip_contents = true
+layout_mode = 2
+
+[node name="CategoryLabel" type="Label" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer" unique_id=547383834]
+layout_mode = 2
+text = "Category:"
+
+[node name="CategoryOption" type="OptionButton" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer" unique_id=236725347]
+layout_mode = 2
+item_count = 1
+popup/item_0/text = "1"
+popup/item_0/id = 0
+popup/item_0/separator = true
+
+[node name="DifficultyLabel" type="Label" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer" unique_id=1951161239]
+layout_mode = 2
+text = "Difficulty:"
+
+[node name="DifficultyOption" type="OptionButton" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer" unique_id=154056459]
+layout_mode = 2
+item_count = 1
+popup/item_0/text = "1"
+popup/item_0/id = 0
+popup/item_0/separator = true
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer" unique_id=57369106]
+layout_mode = 2
+
+[node name="LoadButton" type="Button" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer/HBoxContainer" unique_id=693167007]
+layout_mode = 2
+text = "Load"
+
+[node name="DownloadButton" type="Button" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer/HBoxContainer" unique_id=800053086]
+layout_mode = 2
+text = "Download"
+
+[node name="StatusLabel" type="Label" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer" unique_id=881351594]
+layout_mode = 2
+text = "Status: Ready"

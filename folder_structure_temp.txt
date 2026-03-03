@@ -1,0 +1,40 @@
+/Scripts
+    /Core
+        GameStateManager.cs
+        SessionConfig.cs
+
+    /Networking
+        NetworkService.cs
+        LobbyHostManager.cs
+        LobbyClientManager.cs
+        RpcContracts.cs
+        TimeSyncService.cs
+
+    /Gameplay
+        QuestionManager.cs
+        TimerService.cs
+        AnswerProcessor.cs
+        ScoringService.cs
+        LeaderboardService.cs
+
+    /Progression
+        XpService.cs
+        AchievementService.cs
+        StandingService.cs
+
+    /Persistence
+        ProfileRepository.cs
+        JsonStorageService.cs
+        SessionHistoryRepository.cs
+
+    /UI
+        MainMenuController.cs
+        LobbyUIController.cs
+        QuestionUIController.cs
+        LeaderboardUIController.cs
+
+    /Models
+        PlayerModel.cs
+        QuestionModel.cs
+        SessionModel.cs
+        AchievementModel.cs
