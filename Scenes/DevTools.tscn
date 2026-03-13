@@ -52,6 +52,8 @@ layout_mode = 2
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer/ScrollContainer" unique_id=464805415]
 clip_contents = true
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="CategoryLabel" type="Label" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer" unique_id=547383834]
 layout_mode = 2
@@ -85,6 +87,10 @@ text = "Load"
 [node name="DownloadButton" type="Button" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer/HBoxContainer" unique_id=800053086]
 layout_mode = 2
 text = "Download"
+
+[node name="AddButton" type="Button" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1857942044]
+layout_mode = 2
+text = "Add"
 
 [node name="StatusLabel" type="Label" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer" unique_id=881351594]
 layout_mode = 2

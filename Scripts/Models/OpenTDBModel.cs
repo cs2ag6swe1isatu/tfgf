@@ -71,3 +71,15 @@ public class OpenTDBQuestion
     [JsonPropertyName("incorrect_answers")]
     public List<string> IncorrectAnswers { get; set; }
 }
+
+public class OpenTDBTokenResponse
+{
+    [JsonPropertyName("response_code")]
+    public int ResponseCode { get; set; }
+
+    [JsonPropertyName("response_message")]
+    public string ResponseMessage { get; set; }
+
+    [JsonPropertyName("token")]
+    public string Token { get; set; }
+}

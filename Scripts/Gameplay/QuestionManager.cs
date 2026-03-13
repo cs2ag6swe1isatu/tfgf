@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using TFGF.Core;
 
 public partial class QuestionManager : Node
 {
@@ -12,7 +13,7 @@ public partial class QuestionManager : Node
 
     public override void _Ready()
     {
-        LoadQuestions("res://Data/Questions.json");
+        LoadQuestions(Path.Questions);
     }
 
     public void LoadQuestions(string filePath)

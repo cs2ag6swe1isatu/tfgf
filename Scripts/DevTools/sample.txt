@@ -1,0 +1,3 @@
+https://opentdb.com/api_count.php?category=19
+
+{"category_id":19,"category_question_count":{"total_question_count":80,"total_easy_question_count":29,"total_medium_question_count":31,"total_hard_question_count":20}}
