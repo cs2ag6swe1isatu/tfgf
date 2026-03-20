@@ -45,8 +45,39 @@ offset_bottom = -40.0
 layout_direction = 2
 layout_mode = 2
 
+[node name="PathHBox" type="HBoxContainer" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer" unique_id=1267834597]
+layout_mode = 2
+
+[node name="PathLabel" type="Label" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer/PathHBox" unique_id=539440567]
+layout_mode = 2
+text = "DB Path:"
+
+[node name="PathEdit" type="LineEdit" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer/PathHBox" unique_id=634873602]
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+
+[node name="BrowseButton" type="Button" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer/PathHBox" unique_id=323979209]
+layout_mode = 2
+text = "Browse"
+
+[node name="CategoryHBox" type="HBoxContainer" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer" unique_id=269633360]
+layout_mode = 2
+
+[node name="NewCategoryLabel" type="Label" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer/CategoryHBox" unique_id=99246351]
+layout_mode = 2
+text = "New Category:"
+
+[node name="NewCategoryEdit" type="LineEdit" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer/CategoryHBox" unique_id=586248156]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AddCategoryButton" type="Button" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer/CategoryHBox" unique_id=1052736376]
+layout_mode = 2
+text = "Add"
+
 [node name="ScrollContainer" type="ScrollContainer" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer" unique_id=604818573]
-custom_minimum_size = Vector2(0, 350)
+custom_minimum_size = Vector2(0, 300)
 layout_mode = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/TabContainer/QuestionDBUI/MarginContainer/VBoxContainer/ScrollContainer" unique_id=464805415]

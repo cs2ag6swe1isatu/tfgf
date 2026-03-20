@@ -1,6 +1,7 @@
 // Contains methods and attributes for integrating with the opentdb api
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Godot;
@@ -25,16 +26,25 @@ public class OpenTDBService
         if (!string.IsNullOrEmpty(_sessionToken)) return _sessionToken;
 
         string url = $"{BaseUrl}/api_token.php?command=request";
-        string json = await _client.GetStringAsync(url);
-        var response = JsonSerializer.Deserialize<OpenTDBTokenResponse>(json);
-
-        if (response?.ResponseCode == 0)
+        try
         {
-            _sessionToken = response.Token;
-            return _sessionToken;
-        }
+            GD.Print($"[OpenTDBService] Requesting token from {url}...");
+            string json = await GetStringAsyncSafe(url);
+            var response = JsonSerializer.Deserialize<OpenTDBTokenResponse>(json);
 
-        throw new OpenTDBException(response?.ResponseCode ?? -1, "Failed to retrieve session token.");
+            if (response?.ResponseCode == 0)
+            {
+                _sessionToken = response.Token;
+                return _sessionToken;
+            }
+
+            throw new OpenTDBException(response?.ResponseCode ?? -1, "Failed to retrieve session token.");
+        }
+        catch (Exception e) when (!(e is OpenTDBException))
+        {
+            GD.PushError($"[OpenTDBService] Token request failed: {e.Message}");
+            throw;
+        }
     }
 
     public async Task ResetTokenAsync()
@@ -42,13 +52,30 @@ public class OpenTDBService
         if (string.IsNullOrEmpty(_sessionToken)) return;
 
         string url = $"{BaseUrl}/api_token.php?command=reset&token={_sessionToken}";
-        string json = await _client.GetStringAsync(url);
-        var response = JsonSerializer.Deserialize<OpenTDBTokenResponse>(json);
-
-        if (response?.ResponseCode != 0)
+        try
         {
-            throw new OpenTDBException(response?.ResponseCode ?? -1, "Failed to reset session token.");
+            GD.Print($"[OpenTDBService] Resetting token at {url}...");
+            string json = await GetStringAsyncSafe(url);
+            var response = JsonSerializer.Deserialize<OpenTDBTokenResponse>(json);
+
+            if (response?.ResponseCode != 0)
+            {
+                throw new OpenTDBException(response?.ResponseCode ?? -1, "Failed to reset session token.");
+            }
         }
+        catch (Exception e) when (!(e is OpenTDBException))
+        {
+            GD.PushError($"[OpenTDBService] Token reset failed: {e.Message}");
+            throw;
+        }
+    }
+
+    private async Task<string> GetStringAsyncSafe(string url, int timeoutSeconds = 10)
+    {
+        using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
+        using var response = await _client.GetAsync(url, cts.Token);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync();
     }
 
     public async Task<List<OpenTDBCategory>> FetchCategoriesAsync()
@@ -56,7 +83,8 @@ public class OpenTDBService
         string url = $"{BaseUrl}/api_category.php";
         try
         {
-            string json = await _client.GetStringAsync(url);
+            GD.Print($"[OpenTDBService] Fetching categories from {url}...");
+            string json = await GetStringAsyncSafe(url);
             var response = JsonSerializer.Deserialize<OpenTDBCategoryResponse>(json);
             return response?.TriviaCategories ?? new List<OpenTDBCategory>();
         }
@@ -72,7 +100,7 @@ public class OpenTDBService
         string url = $"{BaseUrl}/api_count.php?category={categoryId}";
         try
         {
-            string json = await _client.GetStringAsync(url);
+            string json = await GetStringAsyncSafe(url);
             var response = JsonSerializer.Deserialize<OpenTDBCountResponse>(json);
 
             if (response?.CategoryQuestionCount == null) return 0;
@@ -97,31 +125,40 @@ public class OpenTDBService
         string token = await GetTokenAsync();
         string url = $"{BaseUrl}/api.php?amount={amountAvailable}&category={category}&difficulty={difficulty}&type=multiple&encode=base64&token={token}";
 
-        string json = await _client.GetStringAsync(url);
-        var response = JsonSerializer.Deserialize<OpenTDBResponse>(json);
-
-        if (response == null)
+        try
         {
-            throw new Exception("Failed to deserialize OpenTDB response.");
+            GD.Print($"[OpenTDBService] Fetching questions from {url}...");
+            string json = await GetStringAsyncSafe(url);
+            var response = JsonSerializer.Deserialize<OpenTDBResponse>(json);
+
+            if (response == null)
+            {
+                throw new Exception("Failed to deserialize OpenTDB response.");
+            }
+
+            switch (response.ResponseCode)
+            {
+                case 0:
+                    return response;
+                case 1:
+                    throw new OpenTDBException(1, "No Results: Could not return results. The API doesn't have enough questions for your query.");
+                case 2:
+                    throw new OpenTDBException(2, "Invalid Parameter: Contains an invalid parameter. Arguments passed in aren't valid.");
+                case 3:
+                    _sessionToken = null; 
+                    throw new OpenTDBException(3, "Token Not Found: Session Token does not exist.");
+                case 4:
+                    throw new OpenTDBException(4, "Token Empty: Session Token has returned all possible questions for the specified query. Resetting the Token is necessary.");
+                case 5:
+                    throw new OpenTDBException(5, "Rate Limit: Too many requests have occurred. Each IP can only access the API once every 5 seconds.");
+                default:
+                    throw new OpenTDBException(response.ResponseCode, $"Unknown Response Code: {response.ResponseCode}");
+            }
         }
-
-        switch (response.ResponseCode)
+        catch (Exception e) when (!(e is OpenTDBException))
         {
-            case 0:
-                return response;
-            case 1:
-                throw new OpenTDBException(1, "No Results: Could not return results. The API doesn't have enough questions for your query.");
-            case 2:
-                throw new OpenTDBException(2, "Invalid Parameter: Contains an invalid parameter. Arguments passed in aren't valid.");
-            case 3:
-                _sessionToken = null; 
-                throw new OpenTDBException(3, "Token Not Found: Session Token does not exist.");
-            case 4:
-                throw new OpenTDBException(4, "Token Empty: Session Token has returned all possible questions for the specified query. Resetting the Token is necessary.");
-            case 5:
-                throw new OpenTDBException(5, "Rate Limit: Too many requests have occurred. Each IP can only access the API once every 5 seconds.");
-            default:
-                throw new OpenTDBException(response.ResponseCode, $"Unknown Response Code: {response.ResponseCode}");
+            GD.PushError($"[OpenTDBService] Fetch questions failed: {e.Message}");
+            throw;
         }
     }
 }

@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="TFGF"
-run/main_scene="uid://d1ibtq6s378v"
+run/main_scene="uid://dxupr0uug4bir"
 config/features=PackedStringArray("4.6", "C#", "Mobile")
 config/icon="res://icon.svg"
 

@@ -6,7 +6,12 @@ using Godot;
 
 public class QuestionRepository
 {
-    private readonly string _dbPath;
+    private string _dbPath;
+    public string DbPath 
+    { 
+        get => _dbPath; 
+        set => _dbPath = value; 
+    }
 
     public QuestionRepository(string dbPath)
     {
@@ -15,7 +20,7 @@ public class QuestionRepository
 
     public List<QuestionModel> Load()
     {
-        if (!FileAccess.FileExists(_dbPath))
+        if (string.IsNullOrEmpty(_dbPath) || !FileAccess.FileExists(_dbPath))
         {
             return new List<QuestionModel>();
         }
