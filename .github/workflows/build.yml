@@ -53,11 +53,25 @@ jobs:
         run: |
           mkdir -p builds/windows
           mkdir -p builds/linux
-          # Ensure binary is executable (even if restored from cache)
-          chmod +x ./godot_engine
           
+          # Export Windows
           ./godot_engine --headless --path . --export-release "Windows Desktop" ./builds/windows/game.exe
+          # Export Linux
           ./godot_engine --headless --path . --export-release "Linux" ./builds/linux/game.x86_64
+          
+          # ZIP them up so they are easy to share
+          cd builds
+          zip -r ../game_windows.zip windows/
+          zip -r ../game_linux.zip linux/
+          cd ..
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            game_windows.zip
+            game_linux.zip
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
