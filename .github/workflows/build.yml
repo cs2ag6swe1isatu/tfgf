@@ -9,54 +9,42 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      # 1. Setup .NET (CRITICAL for Mono version)
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      # 2. Restore and Build C#
       - name: Dotnet Build
         run: |
           dotnet restore
           dotnet build
 
-      # 3. Cache (Saves 1GB download)
-      - name: Cache Godot Files
-        id: cache-godot
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.local/share/godot/export_templates
-            ~/.local/share/godot/godot_executable
-          key: ${{ runner.os }}-godot-4.6-mono
+      # Manual Download and Setup of Godot 4.6 Mono
+      - name: Download and Setup Godot
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates/4.6.stable.mono
+          # Download Engine
+          wget -q https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_mono_linux_x86_64.zip
+          unzip -q Godot_v4.6-stable_mono_linux_x86_64.zip
+          mv Godot_v4.6-stable_mono_linux_x86_64/Godot_v4.6-stable_mono_linux.x86_64 ./godot_engine
+          chmod +x ./godot_engine
+          
+          # Download Templates
+          wget -q https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_mono_export_templates.tpz
+          unzip -q Godot_v4.6-stable_mono_export_templates.tpz
+          # Move templates to where Godot expects them
+          mv templates/* ~/.local/share/godot/export_templates/4.6.stable.mono/
 
-      # 4. Create the builds directory manually
-      # Sometimes the action fails if the target folder doesn't exist yet
-      - name: Create Build Folder
-        run: mkdir -p builds/windows builds/linux
-
-      # 5. The Manual Export (The "Arch" way)
       - name: Manual Godot Export
         run: |
-          # Create the folder for the results
           mkdir -p builds/windows
-          
-          # Find where the action downloaded the Godot binary
-          GODOT_BIN=$(find /home/runner/.local/share/godot/godot_executable -type f -name "Godot*_linux.x86_64" | head -n 1)
-          chmod +x "$GODOT_BIN"
-          
-          echo "Using Godot Binary: $GODOT_BIN"
-          
-          # Force export for Windows
-          # Replace "Windows Desktop" with the EXACT name in your export_presets.cfg if different
-          "$GODOT_BIN" --headless --path . --export-release "Windows Desktop" ./builds/windows/game.exe
-          
-          # Force export for Linux
           mkdir -p builds/linux
-          "$GODOT_BIN" --headless --path . --export-release "Linux" ./builds/linux/game.x86_64
+          
+          # Run the export
+          # IMPORTANT: Check that your preset is named exactly "Windows Desktop"
+          ./godot_engine --headless --path . --export-release "Windows Desktop" ./builds/windows/game.exe
+          ./godot_engine --headless --path . --export-release "Linux" ./builds/linux/game.x86_64
 
-      # 6. Upload to GitHub
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
