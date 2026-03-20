@@ -1,7 +1,5 @@
 name: "Build Project"
-on: 
-  push:
-    branches: [ main ]  # Runs every time you push to main
+on: [push]
 
 jobs:
   export_game:
@@ -11,13 +9,19 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      # 1. Setup .NET (Required for Mono/C#)
+      # 1. Setup .NET (CRITICAL for Mono version)
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      # 2. Cache Godot & Templates (Saves ~1GB download time)
+      # 2. Restore and Build C#
+      - name: Dotnet Build
+        run: |
+          dotnet restore
+          dotnet build
+
+      # 3. Cache (Saves 1GB download)
       - name: Cache Godot Files
         id: cache-godot
         uses: actions/cache@v4
@@ -27,23 +31,28 @@ jobs:
             ~/.local/share/godot/godot_executable
           key: ${{ runner.os }}-godot-4.6-mono
 
-      # 3. Export Game
+      # 4. Create the builds directory manually
+      # Sometimes the action fails if the target folder doesn't exist yet
+      - name: Create Build Folder
+        run: mkdir -p builds/windows builds/linux
+
+      # 5. The Export
       - name: export game
         uses: firebelley/godot-export@v5.2.1
         with:
-          # Updated for Godot 4.6 stable Mono
           godot_executable_download_url: https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_mono_linux_x86_64.zip
           godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_mono_export_templates.tpz
           relative_project_path: ./
           archive_output: true
-          cache: true
-          # Fixes the "No file path set" error by forcing a build directory
+          # FORCING the export to ignore the internal preset path
           use_preset_export_path: false
+          # This tells the action where to put the files regardless of your .cfg
+          base_build_path: builds
           export_debug: false
 
-      # 4. Upload the resulting zip as a GitHub Artifact
+      # 6. Upload to GitHub
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: game-builds
-          path: /home/runner/work/${{ github.event.repository.name }}/${{ github.event.repository.name }}/builds/
+          path: builds/
