@@ -1,0 +1,37 @@
+name: "Build Project"
+on: push
+
+jobs:
+  export_game:
+    runs-on: ubuntu-latest
+    name: Export Game
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      # 1. Setup .NET for Mono/C# support
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x' # Godot 4.x usually targets .NET 8
+
+      # 2. Cache Godot 4.6 Files
+      - name: Cache Godot Files
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/godot/export_templates
+            /usr/local/bin/godot
+          key: ${{ runner.os }}-godot-4.6-mono
+
+      # 3. Export using Godot 4.6 Mono URLs
+      - name: export game
+        uses: firebelley/godot-export@v5.2.1
+        with:
+          # Note the 'mono' in the URLs below
+          godot_executable_download_url: https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_mono_linux_x86_64.zip
+          godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_mono_export_templates.tpz
+          relative_project_path: ./
+          archive_output: true
+          cache: true # Turns on internal action caching
