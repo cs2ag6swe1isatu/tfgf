@@ -1,0 +1,31 @@
+name: "Build Project"
+on: push
+
+jobs:
+  export_game:
+    runs-on: ubuntu-latest
+    name: Export Game
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      # 1. Define the Cache
+      - name: Cache Godot Files
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/godot/export_templates
+            /usr/local/bin/godot
+          # The 'key' ensures that if you change Godot versions, it downloads fresh ones
+          key: ${{ runner.os }}-godot-4.2.1 
+
+      # 2. Export the Game
+      - name: export game
+        uses: firebelley/godot-export@v5.2.1
+        with:
+          godot_executable_download_url: https://downloads.tuxfamily.org/godotengine/4.2.1/Godot_v4.2.1-stable_linux_x86_64.zip
+          godot_export_templates_download_url: https://downloads.tuxfamily.org/godotengine/4.2.1/Godot_v4.2.1-stable_export_templates.tpz
+          relative_project_path: ./
+          archive_output: true
+          # Note: Most modern Godot actions have 'cache: true' as an optional parameter now!
