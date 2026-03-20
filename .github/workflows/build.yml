@@ -19,37 +19,56 @@ jobs:
           dotnet restore
           dotnet build
 
-      - name: Download and Setup Godot
+      # --- CACHE LOGIC START ---
+      - name: Cache Godot Engine and Templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./godot_engine
+            ./GodotSharp
+            ~/.local/share/godot/export_templates/4.6.stable.mono
+          # The key ensures if you change versions, it re-downloads
+          key: ${{ runner.os }}-godot-4.6-mono-v1
+
+      - name: Download Godot (if not cached)
+        if: steps.cache-godot.outputs.cache-hit != 'true'
         run: |
-          # 1. Create template directory
           mkdir -p ~/.local/share/godot/export_templates/4.6.stable.mono
           
-          # 2. Download and Unzip Engine
+          # Download Engine
           wget -q https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_mono_linux_x86_64.zip
           unzip -q Godot_v4.6-stable_mono_linux_x86_64.zip
-          
-          # 3. CRITICAL: Move the binary AND the GodotSharp folder together
-          # This prevents the "Assemblies not found" crash
           mv Godot_v4.6-stable_mono_linux_x86_64/Godot_v4.6-stable_mono_linux.x86_64 ./godot_engine
           mv Godot_v4.6-stable_mono_linux_x86_64/GodotSharp ./GodotSharp
           chmod +x ./godot_engine
           
-          # 4. Download and setup Templates
+          # Download Templates
           wget -q https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_mono_export_templates.tpz
           unzip -q Godot_v4.6-stable_mono_export_templates.tpz
           mv templates/* ~/.local/share/godot/export_templates/4.6.stable.mono/
+      # --- CACHE LOGIC END ---
 
       - name: Manual Godot Export
         run: |
           mkdir -p builds/windows
           mkdir -p builds/linux
+          # Ensure binary is executable (even if restored from cache)
+          chmod +x ./godot_engine
           
-          # We use --verbose to see exactly what Godot is doing if it fails
-          ./godot_engine --headless --verbose --path . --export-release "Windows Desktop" ./builds/windows/game.exe
-          ./godot_engine --headless --verbose --path . --export-release "Linux" ./builds/linux/game.x86_64
+          ./godot_engine --headless --path . --export-release "Windows Desktop" ./builds/windows/game.exe
+          ./godot_engine --headless --path . --export-release "Linux" ./builds/linux/game.x86_64
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: game-builds
           path: builds/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            builds/windows/game.exe
+            builds/linux/game.x86_64
