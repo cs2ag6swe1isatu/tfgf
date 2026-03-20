@@ -1,5 +1,7 @@
 name: "Build Project"
-on: push
+on: 
+  push:
+    branches: [ main ]  # Runs every time you push to main
 
 jobs:
   export_game:
@@ -9,29 +11,39 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      # 1. Setup .NET for Mono/C# support
+      # 1. Setup .NET (Required for Mono/C#)
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x' # Godot 4.x usually targets .NET 8
+          dotnet-version: '8.0.x'
 
-      # 2. Cache Godot 4.6 Files
+      # 2. Cache Godot & Templates (Saves ~1GB download time)
       - name: Cache Godot Files
         id: cache-godot
         uses: actions/cache@v4
         with:
           path: |
             ~/.local/share/godot/export_templates
-            /usr/local/bin/godot
+            ~/.local/share/godot/godot_executable
           key: ${{ runner.os }}-godot-4.6-mono
 
-      # 3. Export using Godot 4.6 Mono URLs
+      # 3. Export Game
       - name: export game
         uses: firebelley/godot-export@v5.2.1
         with:
-          # Note the 'mono' in the URLs below
+          # Updated for Godot 4.6 stable Mono
           godot_executable_download_url: https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_mono_linux_x86_64.zip
           godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_mono_export_templates.tpz
           relative_project_path: ./
           archive_output: true
-          cache: true # Turns on internal action caching
+          cache: true
+          # Fixes the "No file path set" error by forcing a build directory
+          use_preset_export_path: false
+          export_debug: false
+
+      # 4. Upload the resulting zip as a GitHub Artifact
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-builds
+          path: /home/runner/work/${{ github.event.repository.name }}/${{ github.event.repository.name }}/builds/
