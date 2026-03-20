@@ -19,20 +19,24 @@ jobs:
           dotnet restore
           dotnet build
 
-      # Manual Download and Setup of Godot 4.6 Mono
       - name: Download and Setup Godot
         run: |
+          # 1. Create template directory
           mkdir -p ~/.local/share/godot/export_templates/4.6.stable.mono
-          # Download Engine
+          
+          # 2. Download and Unzip Engine
           wget -q https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_mono_linux_x86_64.zip
           unzip -q Godot_v4.6-stable_mono_linux_x86_64.zip
+          
+          # 3. CRITICAL: Move the binary AND the GodotSharp folder together
+          # This prevents the "Assemblies not found" crash
           mv Godot_v4.6-stable_mono_linux_x86_64/Godot_v4.6-stable_mono_linux.x86_64 ./godot_engine
+          mv Godot_v4.6-stable_mono_linux_x86_64/GodotSharp ./GodotSharp
           chmod +x ./godot_engine
           
-          # Download Templates
+          # 4. Download and setup Templates
           wget -q https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_mono_export_templates.tpz
           unzip -q Godot_v4.6-stable_mono_export_templates.tpz
-          # Move templates to where Godot expects them
           mv templates/* ~/.local/share/godot/export_templates/4.6.stable.mono/
 
       - name: Manual Godot Export
@@ -40,10 +44,9 @@ jobs:
           mkdir -p builds/windows
           mkdir -p builds/linux
           
-          # Run the export
-          # IMPORTANT: Check that your preset is named exactly "Windows Desktop"
-          ./godot_engine --headless --path . --export-release "Windows Desktop" ./builds/windows/game.exe
-          ./godot_engine --headless --path . --export-release "Linux" ./builds/linux/game.x86_64
+          # We use --verbose to see exactly what Godot is doing if it fails
+          ./godot_engine --headless --verbose --path . --export-release "Windows Desktop" ./builds/windows/game.exe
+          ./godot_engine --headless --verbose --path . --export-release "Linux" ./builds/linux/game.x86_64
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
