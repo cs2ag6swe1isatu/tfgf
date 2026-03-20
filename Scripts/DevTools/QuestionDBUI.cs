@@ -15,6 +15,11 @@ public partial class QuestionDBUI : Control
     private Button _btnLoad;
     private Button _btnDownload;
     private Button _btnAdd;
+    private Button _btnBrowse;
+    private Button _btnAddCategory;
+    private LineEdit _txtPath;
+    private LineEdit _txtNewCategory;
+    private FileDialog _fileDialog;
     private Label _lblStatus;
     private VBoxContainer _vBoxQuestions;
     private QuestionEditor _editor;
@@ -28,6 +33,39 @@ public partial class QuestionDBUI : Control
         _btnAdd = GetNode<Button>("MarginContainer/VBoxContainer/HBoxContainer/AddButton");
         _lblStatus = GetNode<Label>("MarginContainer/VBoxContainer/StatusLabel");
         _vBoxQuestions = GetNode<VBoxContainer>("MarginContainer/VBoxContainer/ScrollContainer/VBoxContainer");
+
+        _btnBrowse = GetNodeOrNull<Button>("MarginContainer/VBoxContainer/PathHBox/BrowseButton");
+        _txtPath = GetNodeOrNull<LineEdit>("MarginContainer/VBoxContainer/PathHBox/PathEdit");
+        _btnAddCategory = GetNodeOrNull<Button>("MarginContainer/VBoxContainer/CategoryHBox/AddCategoryButton");
+        _txtNewCategory = GetNodeOrNull<LineEdit>("MarginContainer/VBoxContainer/CategoryHBox/NewCategoryEdit");
+
+        if (_txtPath != null)
+        {
+            _txtPath.Text = _db.CurrentDatabasePath;
+            _txtPath.Editable = false;
+        }
+
+        if (_btnBrowse != null)
+        {
+            _btnBrowse.Pressed += OnBrowsePressed;
+        }
+
+        if (_btnAddCategory != null)
+        {
+            _btnAddCategory.Pressed += OnAddCategoryPressed;
+        }
+
+        if (_txtNewCategory != null)
+        {
+            _txtNewCategory.PlaceholderText = "Enter new category...";
+        }
+
+        _fileDialog = new FileDialog();
+        _fileDialog.FileMode = FileDialog.FileModeEnum.OpenFile;
+        _fileDialog.Access = FileDialog.AccessEnum.Filesystem;
+        _fileDialog.AddFilter("*.json", "JSON Files");
+        _fileDialog.FileSelected += OnFileSelected;
+        AddChild(_fileDialog);
 
         _optCategory.Clear();
         _optCategory.AddItem("Loading API Categories...", 0);
@@ -73,6 +111,53 @@ public partial class QuestionDBUI : Control
         RefreshQuestionList();
     }
 
+    private void OnAddCategoryPressed()
+    {
+        if (_txtNewCategory != null && !string.IsNullOrWhiteSpace(_txtNewCategory.Text))
+        {
+            string newCategory = _txtNewCategory.Text.Trim();
+            _db.AddCustomCategory(newCategory);
+            
+            // Refresh the category list
+            _optCategory.Clear();
+            _optCategory.AddItem("Reloading Categories...", 0);
+            _optCategory.Disabled = true;
+            
+            // Reload categories asynchronously
+            Task.Run(async () =>
+            {
+                await Task.Delay(100); // Small delay to allow UI to update
+                Callable.From(() =>
+                {
+                    RefreshCategoryList();
+                }).CallDeferred();
+            });
+            
+            _txtNewCategory.Text = ""; // Clear the input field
+        }
+    }
+
+    private async void RefreshCategoryList()
+    {
+        var categories = await _db.FetchCategoriesAsync();
+        _optCategory.Clear();
+        
+        if (categories.Count > 0)
+        {
+            foreach (var cat in categories)
+            {
+                _optCategory.AddItem(cat.Name, cat.Id);
+            }
+            _optCategory.Disabled = false;
+            UpdateStatus("Categories refreshed.");
+        }
+        else
+        {
+            _optCategory.AddItem("No categories available.", 0);
+            UpdateStatus("No categories available.");
+        }
+    }
+
     private QuestionModel _editingQuestion = null;
 
     private void OnAddPressed()
@@ -110,6 +195,17 @@ public partial class QuestionDBUI : Control
             }
         }
         _editingQuestion = null;
+    }
+
+    private void OnBrowsePressed()
+    {
+        _fileDialog.PopupCentered(new Vector2I(700, 500));
+    }
+
+    private void OnFileSelected(string path)
+    {
+        if (_txtPath != null) _txtPath.Text = path;
+        _db.SetDatabasePath(path);
     }
 
     private void OnLoadPressed()
