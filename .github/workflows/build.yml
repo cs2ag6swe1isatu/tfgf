@@ -36,19 +36,25 @@ jobs:
       - name: Create Build Folder
         run: mkdir -p builds/windows builds/linux
 
-      # 5. The Export
-      - name: export game
-        uses: firebelley/godot-export@v5.2.1
-        with:
-          godot_executable_download_url: https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_mono_linux_x86_64.zip
-          godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_mono_export_templates.tpz
-          relative_project_path: ./
-          archive_output: true
-          # FORCING the export to ignore the internal preset path
-          use_preset_export_path: false
-          # This tells the action where to put the files regardless of your .cfg
-          base_build_path: builds
-          export_debug: false
+      # 5. The Manual Export (The "Arch" way)
+      - name: Manual Godot Export
+        run: |
+          # Create the folder for the results
+          mkdir -p builds/windows
+          
+          # Find where the action downloaded the Godot binary
+          GODOT_BIN=$(find /home/runner/.local/share/godot/godot_executable -type f -name "Godot*_linux.x86_64" | head -n 1)
+          chmod +x "$GODOT_BIN"
+          
+          echo "Using Godot Binary: $GODOT_BIN"
+          
+          # Force export for Windows
+          # Replace "Windows Desktop" with the EXACT name in your export_presets.cfg if different
+          "$GODOT_BIN" --headless --path . --export-release "Windows Desktop" ./builds/windows/game.exe
+          
+          # Force export for Linux
+          mkdir -p builds/linux
+          "$GODOT_BIN" --headless --path . --export-release "Linux" ./builds/linux/game.x86_64
 
       # 6. Upload to GitHub
       - name: Upload Artifact
